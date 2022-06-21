@@ -1,6 +1,9 @@
 .ipynb_checkpoints
 __pycache__
-sk
+
+data
 venv
-implicit
-ml-100k
+depr
+
+*.pt
+TODO.txt
