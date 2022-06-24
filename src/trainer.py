@@ -1,10 +1,10 @@
 from typing import *
 from numpy.typing import ArrayLike
+from matplotlib.figure import Figure
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
 from tqdm.notebook import tqdm
 
 from sklearn.manifold import TSNE
@@ -99,7 +99,7 @@ class MetricTrainer(nn.Module):
                 self.scheduler.step()
             self.log(
                 'train_epoch_loss', 
-                self.epoch_reduce('train_step_loss', len(train_loader)))
+                self._epoch_reduce('train_step_loss', len(train_loader)))
             print('train_loss:', self.logs['train_epoch_loss'][-1])
             
             if (epoch+1) % validate_every == 0:
@@ -108,12 +108,12 @@ class MetricTrainer(nn.Module):
                     loss = self.validation_step(batch)
                 self.log(
                     'valid_epoch_loss', 
-                    self.epoch_reduce('valid_step_loss', len(valid_loader)))
+                    self._epoch_reduce('valid_step_loss', len(valid_loader)))
                 print('valid_loss:', self.logs['valid_epoch_loss'][-1])
 
-                total_hits = self.epoch_reduce('valid_step_hits', len(valid_loader), reduction='sum')
-                total_ndcg = self.epoch_reduce('valid_step_ndcg', len(valid_loader), reduction='sum')
-                total_size = self.epoch_reduce('valid_step_size', len(valid_loader), reduction='sum')
+                total_hits = self._epoch_reduce('valid_step_hits', len(valid_loader), reduction='sum')
+                total_ndcg = self._epoch_reduce('valid_step_ndcg', len(valid_loader), reduction='sum')
+                total_size = self._epoch_reduce('valid_step_size', len(valid_loader), reduction='sum')
                 self.log(
                     'valid_epoch_hitrate', 
                     total_hits/total_size)
@@ -128,7 +128,7 @@ class MetricTrainer(nn.Module):
                 
             print('-'*80)
     
-    def predict_embeddings(self, project_onto_euclidean: bool = False):
+    def predict_embeddings(self, project_onto_euclidean: bool = False) -> Tuple[torch.Tensor]:
         self.model.eval()
         all_users = torch.tensor(list(range(self.model.n_user))).to(self.device)
         all_items = torch.tensor(list(range(self.model.n_item))).to(self.device)
@@ -138,7 +138,7 @@ class MetricTrainer(nn.Module):
             return self.model.manifold.logmap0(user_embeddings), self.model.manifold.logmap0(item_embeddings)
         return user_embeddings, item_embeddings
     
-    def predict_lists(self):
+    def predict_lists(self) -> torch.Tensor:
         user_emb, item_emb = self.predict_embeddings()
         out = torch.zeros((self.model.n_user, self.model.n_item))
         for i in range(self.model.n_user):
@@ -150,8 +150,9 @@ class MetricTrainer(nn.Module):
         algorithm: Literal['TSNE', 'UMAP'] = 'TSNE', 
         item_sizes: Optional[ArrayLike] = None, 
         user_sizes: Optional[ArrayLike] = None, 
-        project_onto_euclidean : bool = False
-    ) -> matplotlib.figure.Figure:
+        project_onto_euclidean: bool = False,
+        figure_args: dict = {}
+    ) -> Figure:
         
         user_emb, item_emb = self.predict_embeddings(project_onto_euclidean=project_onto_euclidean)
         emb = torch.cat([user_emb.cpu(), item_emb.cpu()], dim=0)
@@ -168,7 +169,10 @@ class MetricTrainer(nn.Module):
         else:
             raise ValueError('Algorithm not supported')
             
-        fig = plt.figure(figsize=(10,10))
+        fig = plt.figure(*figure_args)
         plt.scatter(mapped_item_emb[:, 0], mapped_item_emb[:, 1], s=item_sizes, alpha=0.5, color='blue') # items
         plt.scatter(mapped_user_emb[:, 0], mapped_user_emb[:, 1], s=user_sizes, alpha=0.5, color='red') # users
         return fig
+        
+    def plot_loss(self) -> Figure:
+        raise NotImplemented

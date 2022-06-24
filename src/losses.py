@@ -49,14 +49,15 @@ class CovarianceLoss(nn.Module):
     CML loss from ...
     '''
     
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
     
-    def forward(self, 
-                anchor: torch.Tensor, 
-                positive: torch.Tensor, 
-                negative: torch.Tensor
-        ) -> torch.Tensor:
+    def forward(
+        self, 
+        anchor: torch.Tensor, 
+        positive: torch.Tensor, 
+        negative: torch.Tensor
+    ) -> torch.Tensor:
         
         loss = 0
         for x in (anchor, positive, negative):
@@ -69,8 +70,14 @@ class DistortionLoss(nn.Module):
     CML loss from ...
     '''
     
-    def __init__(self, manifold: geoopt.Manifold, reduction: Literal['mean', 'sum'] = 'mean', eps: float = 1e-6) -> None:
+    def __init__(
+        self, 
+        manifold: geoopt.Manifold, 
+        reduction: Literal['mean', 'sum'] = 'mean', 
+        eps: float = 1e-6
+    ) -> None:
         super().__init__()
+        
         self.manifold = manifold
         self.reduction = reduction
         self.eps = eps
@@ -80,11 +87,12 @@ class DistortionLoss(nn.Module):
         euclid_dist = torch.cdist(self.manifold.logmap0(u), self.manifold.logmap0(v))[:, 0, :] #**0.5
         return torch.abs(hyper_dist - euclid_dist) / (euclid_dist + self.eps)
     
-    def forward(self, 
-                anchor: torch.Tensor, 
-                positive: torch.Tensor, 
-                negative: torch.Tensor
-        ) -> torch.Tensor:
+    def forward(
+        self, 
+        anchor: torch.Tensor, 
+        positive: torch.Tensor, 
+        negative: torch.Tensor
+    ) -> torch.Tensor:
         
         pos_distortion = self._distortion(anchor, positive)
         neg_distortion = self._distortion(anchor, negative)

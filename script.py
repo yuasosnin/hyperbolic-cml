@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,28 +10,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torch.optim import Adam
-
 import geoopt
 from geoopt.optim import RiemannianAdam
 
-from .models import *
-from .losses import *
-from .utils import *
-from .trainer import MetricTrainer
-from .dataset import PariwiseDataset
+from src.models import *
+from src.losses import *
+from src.utils import *
+from src.trainer import MetricTrainer
+from src.dataset import PariwiseDataset
 
 
-DATA: Literal['movielens', 'samokat'] = 'samokat'
-SIZE: Literal['100k', '1m'] = '100k'
-
-
-if DATA == 'movielens':
-    data = load_movielens(SIZE)
-    data_train, data_valid, data_test = train_test_split_interations(data, method='last')
-elif DATA == 'samokat':
-    data = pd.read_csv(f'data/samokat/data_{SIZE}.csv')
-    data_train, data_valid, data_test = train_test_split_interations(data, method='random')
-    
+version: Literal['100k', '1m'] = '100k'
+data = load_movielens(version)
+data_train, data_valid, data_test = train_test_split_interations(data, method='last')
     
 N_USERS: int = data.user_id.nunique()
 N_ITEMS: int = data.item_id.nunique()
@@ -58,7 +51,6 @@ def run(
     train_loader = DataLoader(train_set, batch_size=cfg['bs'], shuffle=True, num_workers=num_workers)
     valid_loader = DataLoader(valid_set, batch_size=N_USERS, shuffle=False)
     test_loader = DataLoader(test_set, batch_size=N_USERS, shuffle=False)
-
 
     if model == 'CML':
         metric_model = CML(
@@ -125,9 +117,16 @@ def run(
             full_hr
         ]
     ))
-
-    with open(f'logs_{mode}.txt', 'a') as f:
-        f.write(row)
-        f.write('\n')
+    
+    headers = 'name,model,embedding_dim,margin,lam,lr,loss,hits,hit_rate,ndcg,global_hit_rate'
+    if not os.path.exists(f'logs/logs_{mode}.txt'):
+        with open(f'logs/logs_{mode}.txt', 'a') as f:
+            f.wrire(headers)
+            f.write(row)
+            f.write('\n')
+    else:
+        with open(f'logs/logs_{mode}.txt', 'a') as f:
+            f.write(row)
+            f.write('\n')
         
     return metric_trainer

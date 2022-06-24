@@ -14,27 +14,27 @@ from torch.utils.data import Dataset, DataLoader
 import geoopt
 
 
-def load_movielens(path: os.PathLike = 'data/movielens', size: Literal['100k', '1m'] = '100k') -> pd.DataFrame:
+def load_movielens(version: Literal['100k', '1m'] = '100k', path: os.PathLike = 'data') -> pd.DataFrame:
     '''Download MovieLens data and get an interactions DataFrame of specified version'''
     
     link = f'https://files.grouplens.org/datasets/movielens/ml-{version}.zip'
-    if not os.path.exists(f'{path}/{version}'):
+    if not os.path.exists(f'{path}/ml-{version}'):
         with open('data.zip', 'wb') as f:
             f.write(requests.get(link, stream=True).content)
         zipfile.ZipFile('data.zip', 'r').extractall(path)
         os.remove('data.zip')
 
-    if version == 'ml-1m':
+    if version == '1m':
         data = pd.read_csv(
-            f'{path}/{version}/ratings.dat', 
+            f'{path}/ml-{version}/ratings.dat', 
             delimiter='::', 
             header=None, 
             names=['user_id', 'item_id', 'rating', 'timestamp'], 
             engine='python')
         
-    elif version == 'ml-100k':
+    elif version == '100k':
         data = pd.read_csv(
-            f'{path}/{version}/u.data', 
+            f'{path}/ml-{version}/u.data', 
             sep='\t', 
             header=None, 
             names=['user_id', 'item_id', 'rating', 'timestamp'])
