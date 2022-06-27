@@ -1,6 +1,7 @@
 from typing import *
 from numpy.typing import ArrayLike
-from matplotlib.figure import Figure
+
+import warnings
 
 import pandas as pd
 import numpy as np
@@ -147,17 +148,18 @@ class MetricTrainer(nn.Module):
     
     def plot_embeddings(
         self, 
+        ax=None,
         algorithm: Literal['TSNE', 'UMAP'] = 'TSNE', 
         item_sizes: Optional[ArrayLike] = None, 
         user_sizes: Optional[ArrayLike] = None, 
         project_onto_euclidean: bool = False,
-        figure_args: dict = {}
-    ) -> Figure:
+        item_kwargs: dict = {},
+        user_kwargs: dict = {}
+    ) -> plt.Axes:
         
         user_emb, item_emb = self.predict_embeddings(project_onto_euclidean=project_onto_euclidean)
         emb = torch.cat([user_emb.cpu(), item_emb.cpu()], dim=0)
         
-        import warnings
         warnings.simplefilter(action='ignore', category=FutureWarning)
 
         if algorithm in {'TSNE', 'tsne'}:
@@ -169,10 +171,12 @@ class MetricTrainer(nn.Module):
         else:
             raise ValueError('Algorithm not supported')
             
-        fig = plt.figure(*figure_args)
-        plt.scatter(mapped_item_emb[:, 0], mapped_item_emb[:, 1], s=item_sizes, alpha=0.5, color='blue') # items
-        plt.scatter(mapped_user_emb[:, 0], mapped_user_emb[:, 1], s=user_sizes, alpha=0.5, color='red') # users
-        return fig
+        if ax is None:
+            ax = plt.gca()
+            
+        ax.scatter(mapped_item_emb[:, 0], mapped_item_emb[:, 1], s=item_sizes, **(dict(alpha=0.5, color='blue') | item_kwargs))
+        ax.scatter(mapped_user_emb[:, 0], mapped_user_emb[:, 1], s=user_sizes, **(dict(alpha=0.5, color='red') | user_kwargs))
+        return ax
         
-    def plot_loss(self) -> Figure:
+    def plot_loss(self) -> plt.Axes:
         raise NotImplemented

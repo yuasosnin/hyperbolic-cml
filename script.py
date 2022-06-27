@@ -104,7 +104,7 @@ def run(
     
     row = ','.join(map(str, 
         [
-            name
+            name,
             model, 
             cfg['embedding_dim'], 
             cfg['margin'], 
